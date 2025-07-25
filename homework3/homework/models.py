@@ -43,7 +43,7 @@ class Classifier(nn.Module):
         self,
         in_channels: int = 3,
         num_classes: int = 6,
-        channels_l0 = 64,
+        channels_l0 = 32,
         n_blocks = 3
     ):
         """
