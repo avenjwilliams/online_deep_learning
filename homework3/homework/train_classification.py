@@ -7,7 +7,7 @@ import torch
 import torch.utils.tensorboard as tb
 
 from .models import metrics, load_model, save_model
-from .datasets/classification_dataset import load_data
+from .datasets.classification_dataset import load_data
 
 class ClassificationLoss(nn.Module):
     def forward(self, logits: torch.Tensor, target: torch.LongTensor) -> torch.Tensor:
@@ -27,7 +27,7 @@ class ClassificationLoss(nn.Module):
 
 def train(
     exp_dir: str = "logs",
-    model_name: str = "linear",
+    model_name: str = "classifier",
     num_epoch: int = 10,
     lr: float = 1e-3,
     batch_size: int = 128,
