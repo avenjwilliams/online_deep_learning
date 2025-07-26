@@ -56,7 +56,7 @@ def train(
     logger = tb.SummaryWriter(log_dir)
 
     # note: the grader uses default kwargs, you'll have to bake them in for the final submission
-    model = load_model(model_name, channels_l0=channels_l0, n_blocks=n_blocks **kwargs)
+    model = load_model(model_name, channels_l0=channels_l0, n_blocks=n_blocks, **kwargs)
     model = model.to(device)
     model.train()
 
