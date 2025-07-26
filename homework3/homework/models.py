@@ -27,7 +27,7 @@ class Classifier(nn.Module):
             # Normalization
             self.normalization= torch.nn.BatchNorm2d(out_channels)
             if in_channels != out_channels:
-                self.skip = torch.nn.Conv2d(in_channels, out_channels, kernel_size=kernel_size, stride=1, padding = padding)
+                self.skip = torch.nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride)
             else:
                 self.skip = torch.nn.Identity()
 

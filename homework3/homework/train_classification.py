@@ -36,7 +36,7 @@ def train(
     batch_size: int = 64,
     seed: int = 2024,
     channels_l0: int = 32,
-    n_blocks: int = 3
+    n_blocks: int = 3,
     **kwargs,
 ):
     if torch.cuda.is_available():
