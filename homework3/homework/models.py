@@ -10,7 +10,7 @@ INPUT_STD = [0.2064, 0.1944, 0.2252]
 
 class Classifier(nn.Module):
     class Block(nn.Module):
-      def __init__(self, in_channels, out_channels, stride):
+      def __init__(self, in_channels = 3, out_channels = 32, stride = 1):
           super().__init__()
 
           # Main path: 2 conv layers
@@ -57,7 +57,7 @@ class Classifier(nn.Module):
 
         cnn_layers = []
         # Initial downsampling
-        cnn_layers.append(nn.Conv2d(in_channels, channels_l0, kernel_size=3, stride=2, padding=1))  # 64x64 → 32x32
+        cnn_layers.append(nn.Conv2d(in_channels, channels_l0, kernel_size=3, stride=2, padding=1))
         cnn_layers.append(nn.ReLU())
 
         # Residual blocks with stride=1
