@@ -56,14 +56,18 @@ class Classifier(nn.Module):
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
         cnn_layers = []
-        c1 = in_channels
+        # Initial downsampling
+        cnn_layers.append(nn.Conv2d(in_channels, channels_l0, kernel_size=3, stride=2, padding=1))  # 64x64 → 32x32
+        cnn_layers.append(nn.ReLU())
+
+        # Residual blocks with stride=1
         for _ in range(n_blocks):
-            c2 = channels_l0
-            cnn_layers.append(self.Block(c1, c2, stride=2))
-            c1 = c2
-        cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1, stride = 1))
-        cnn_layers.append(nn.AdaptiveAvgPool2d((1, 1)))  # Pool to (1, 1)
+            cnn_layers.append(self.Block(channels_l0, channels_l0, stride=1))
+
+        # Head
+        cnn_layers.append(nn.AdaptiveAvgPool2d((1, 1)))
         cnn_layers.append(nn.Flatten())
+        cnn_layers.append(nn.Linear(channels_l0, num_classes))  # → (B, 6)
         self.network = torch.nn.Sequential(*cnn_layers)
 
 
