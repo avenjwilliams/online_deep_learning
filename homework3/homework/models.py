@@ -10,34 +10,31 @@ INPUT_STD = [0.2064, 0.1944, 0.2252]
 
 class Classifier(nn.Module):
     class Block(nn.Module):
-        def __init__(self, in_channels, out_channels, stride):
-            super().__init__()
-            kernel_size = 3
-            padding = (kernel_size - 1) // 2
-            self.c1 = torch.nn.Conv2d(
-                in_channels, out_channels, kernel_size=kernel_size, stride=stride, padding=padding
-            )
-            self.c2 = torch.nn.Conv2d(
-                out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding
-            )
-            self.c3 = torch.nn.Conv2d(
-                out_channels, out_channels, kernel_size=kernel_size, stride=1, padding=padding
-            )
-            self.relu = torch.nn.ReLU()
-            # Normalization
-            self.normalization= torch.nn.BatchNorm2d(out_channels)
-            if in_channels != out_channels:
-                self.skip = torch.nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride)
-            else:
-                self.skip = torch.nn.Identity()
+      def __init__(self, in_channels, out_channels, stride):
+          super().__init__()
 
-        def forward(self, x):
-            # Order is Conv, Normalization, ReLU
-            y = self.relu(self.normalization(self.c1(x)))
-            y = self.relu(self.normalization(self.c2(y)))
-            y = self.relu(self.normalization(self.c3(y)))
+          # Main path: 2 conv layers
+          self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1, stride=stride)
+          self.bn1 = nn.BatchNorm2d(out_channels)
+          self.relu = nn.ReLU(inplace=True)
+          self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
+          self.bn2 = nn.BatchNorm2d(out_channels)
 
-            return self.skip(x) + y
+          # Residual (skip) connection
+          if in_channels != out_channels:
+              self.skip = nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride)
+          else:
+              self.skip = nn.Identity()
+
+      def forward(self, x):
+          identity = self.skip(x)
+
+          out = self.relu(self.bn1(self.conv1(x)))
+          out = self.bn2(self.conv2(out))
+          out += identity
+          out = self.relu(out)
+
+          return out
         
     def __init__(
         self,
@@ -58,19 +55,15 @@ class Classifier(nn.Module):
         self.register_buffer("input_mean", torch.as_tensor(INPUT_MEAN))
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
-        cnn_layers = [
-            torch.nn.Conv2d(in_channels, channels_l0, kernel_size=11, stride=2, padding=5),
-            torch.nn.ReLU()
-            ]
-
+        cnn_layers = []
         c1 = channels_l0
         for _ in range(n_blocks):
-            c2 = c1 * 2
+            c2 = c1
             cnn_layers.append(self.Block(c1, c2, stride=2))
             c1 = c2
-
-        cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1))
-        cnn_layers.append(torch.nn.AdaptiveAvgPool2d(num_classes))
+        cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1, stride = 1))
+        cnn_layers.append(nn.AdaptiveAvgPool2d((1, 1)))  # Pool to (1, 1)
+        cnn_layers.append(nn.Flatten())
         self.network = torch.nn.Sequential(*cnn_layers)
 
 
