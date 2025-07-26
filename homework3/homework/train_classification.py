@@ -31,7 +31,7 @@ class ClassificationLoss(nn.Module):
 def train(
     exp_dir: str = "logs",
     model_name: str = "classifier",
-    num_epoch: int = 10,
+    num_epoch: int = 15,
     lr: float = 1e-3,
     batch_size: int = 64,
     seed: int = 2024,
@@ -66,7 +66,7 @@ def train(
     # create loss function and optimizer
     loss_func = ClassificationLoss()
     
-    optim = torch.optim.SGD(model.parameters(), lr = lr, momentum = 0.9)
+    optim = torch.optim.Adam(model.parameters(), lr = lr)
 
     global_step = 0
     metrics = {"train_acc": [], "val_acc": []}
