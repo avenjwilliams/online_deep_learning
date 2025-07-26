@@ -31,12 +31,12 @@ class ClassificationLoss(nn.Module):
 def train(
     exp_dir: str = "logs",
     model_name: str = "classifier",
-    num_epoch: int = 15,
+    num_epoch: int = 10,
     lr: float = 1e-3,
     batch_size: int = 64,
     seed: int = 2024,
     channels_l0: int = 32,
-    n_blocks: int = 3,
+    n_blocks: int = 4,
     **kwargs,
 ):
     if torch.cuda.is_available():
