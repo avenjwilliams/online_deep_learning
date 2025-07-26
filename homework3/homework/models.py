@@ -40,7 +40,7 @@ class Classifier(nn.Module):
         self,
         in_channels: int = 3,
         num_classes: int = 6,
-        channels_l0 = 32,
+        channels_l0: int = 32,
         n_blocks = 3
     ):
         """
@@ -56,9 +56,9 @@ class Classifier(nn.Module):
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
         cnn_layers = []
-        c1 = channels_l0
+        c1 = in_channels
         for _ in range(n_blocks):
-            c2 = c1
+            c2 = channels_l0
             cnn_layers.append(self.Block(c1, c2, stride=2))
             c1 = c2
         cnn_layers.append(torch.nn.Conv2d(c1, num_classes, kernel_size=1, stride = 1))
