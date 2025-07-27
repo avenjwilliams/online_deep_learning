@@ -151,7 +151,7 @@ class Detector(torch.nn.Module):
         self.down2 = Down_Conv(first_channels, first_channels * 2)
         
         self.up1 = Up_Conv(first_channels * 2, first_channels)
-        self.up2 = Up_Conv(first_channels, first_channels)
+        self.up2 = Up_Conv(first_channels * 2, first_channels)
         
         
 
