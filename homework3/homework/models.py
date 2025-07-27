@@ -146,15 +146,13 @@ class Detector(torch.nn.Module):
 
         Up_Conv = self.Up_Block
         Down_Conv = self.Down_Block
-        self.network = torch.nn.Sequential(
-            # Downsample
-            Down_Conv(in_channels, first_channels),
-            Down_Conv(first_channels, first_channels * 2),
-
-            # Upsample
-            Up_Conv(first_channels * 2, first_channels),
-            Up_Conv(first_channels, first_channels)
-        )
+        
+        self.down1 = Down_Conv(in_channels, first_channels)
+        self.down2 = Down_Conv(first_channels, first_channels * 2)
+        
+        self.up1 = Up_Conv(first_channels * 2, first_channels)
+        self.up2 = Up_Conv(first_channels, first_channels)
+        
         
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
@@ -173,9 +171,14 @@ class Detector(torch.nn.Module):
         # optional: normalizes the input
         z = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
-        output = self.network(z)
-        logits = self.segmentation_head(output)
-        raw_depth = self.depth_activation(self.depth_head(output)).squeeze(1)
+        x1 = self.down1(z)
+        x2 = self.down2(x1)
+
+        u1 = self.up1(x2)
+        u2 = self.up2(torch.cat([u1, x1], dim = 1))
+
+        logits = self.segmentation_head(u2)
+        raw_depth = self.depth_activation(self.depth_head(u2)).squeeze(1)
 
         return logits, raw_depth
 
