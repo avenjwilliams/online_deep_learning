@@ -144,20 +144,17 @@ def train(
         metrics_iou = cm.compute()
         mean_iou = metrics_iou["iou"]
         logger.add_scalar("val_mean_iou", mean_iou, global_step)
-        if epoch == 0 or epoch == 10:
-            print(f"Epoch {epoch+1}: Mean IoU = {mean_iou:.4f}")
+        print(f"Epoch {epoch+1}: Mean IoU = {mean_iou:.4f}")
 
         if lane_mae_values:
             avg_lane_mae = sum(lane_mae_values) / len(lane_mae_values)
             logger.add_scalar("val_lane_depth_mae", avg_lane_mae, global_step)
-            if epoch == 0 or epoch == 10:
-                print(f"Epoch {epoch+1}: Lane-only MAE = {avg_lane_mae:.4f}")
+            print(f"Epoch {epoch+1}: Lane-only MAE = {avg_lane_mae:.4f}")
 
         if overall_mae_values:
             avg_overall_mae = sum(overall_mae_values) / len(overall_mae_values)
             logger.add_scalar("val_depth_mae", avg_overall_mae, global_step)
-            if epoch == 0 or epoch == 10:
-                print(f"Epoch {epoch+1}: Overall Depth MAE = {avg_overall_mae:.4f}")
+            print(f"Epoch {epoch+1}: Overall Depth MAE = {avg_overall_mae:.4f}")
 
 
     # save and overwrite the model in the root directory for grading
