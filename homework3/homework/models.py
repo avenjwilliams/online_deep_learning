@@ -101,10 +101,32 @@ class Classifier(nn.Module):
 
 
 class Detector(torch.nn.Module):
+    class Down_Block(nn.Module):
+        def __init__(self, in_channels: int, out_channels: int):
+            super().__init__()
+            self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1)
+            self.bn = nn.BatchNorm2d(out_channels)
+            self.relu = nn.ReLU(inplace=True)
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.relu(self.bn(self.conv(x)))
+        
+    class Up_Block(nn.Module):
+        def __init__(self, in_channels: int, out_channels: int):
+            super().__init__()
+            self.conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=3, stride = 2, padding=1, output_padding=1)
+            self.bn = nn.BatchNorm2d(out_channels)
+            self.relu = nn.ReLU(inplace=True)
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.relu(self.bn(self.conv(x)))
+
+
     def __init__(
         self,
         in_channels: int = 3,
         num_classes: int = 3,
+        first_channels: int = 16
     ):
         """
         A single model that performs segmentation and depth regression
@@ -118,8 +140,22 @@ class Detector(torch.nn.Module):
         self.register_buffer("input_mean", torch.as_tensor(INPUT_MEAN))
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD))
 
-        # TODO: implement
-        pass
+        self.segmentation_head = nn.Conv2d(first_channels, num_classes, kernel_size=1)
+        self.depth_head = nn.Conv2d(first_channels, 1, kernel_size=1)
+        self.depth_activation = nn.Sigmoid()
+
+        Up_Conv = self.Up_Block
+        Down_Conv = self.Down_Block
+        self.network = torch.nn.Sequential(
+            # Downsample
+            Down_Conv(in_channels, first_channels),
+            Down_Conv(first_channels, first_channels * 2),
+
+            # Upsample
+            Up_Conv(first_channels * 2, first_channels),
+            Up_Conv(first_channels, first_channels)
+        )
+        
 
     def forward(self, x: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
@@ -137,9 +173,9 @@ class Detector(torch.nn.Module):
         # optional: normalizes the input
         z = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
-        # TODO: replace with actual forward pass
-        logits = torch.randn(x.size(0), 3, x.size(2), x.size(3))
-        raw_depth = torch.rand(x.size(0), x.size(2), x.size(3))
+        output = self.network(z)
+        logits = self.segmentation_head(output)
+        raw_depth = self.depth_activation(self.depth_head(output)).squeeze(1)
 
         return logits, raw_depth
 
