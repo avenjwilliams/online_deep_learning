@@ -99,12 +99,13 @@ def train(
 
     for epoch in range(num_epoch):
         model.train()
-        for img, label in train_data:
-            img = img.to(device)
-            label = {k: v.to(device) for k, v in label.items()}
+        for batch in train_data:
+            img = batch['image'].to(device)
+            depth = batch['depth'].to(device)
+            track = batch['track'].to(device)
 
             logits, depth_pred = model(img)
-            loss_val = loss_func(logits, label['track'], depth_pred, label['depth'])
+            loss_val = loss_func(logits, track, depth_pred, depth)
 
             optim.zero_grad()
             loss_val.backward()
@@ -118,24 +119,25 @@ def train(
             cm = ConfusionMatrix(num_classes=3)
             overall_mae_values = []
             lane_mae_values = []
-            for img, label in val_data:
-                img = img.to(device)
-                label = {k: v.to(device) for k, v in label.items()}
+            for batch in val_data:
+                img = batch['image'].to(device)
+                depth = batch['depth'].to(device)
+                track = batch['track'].to(device)
                 
                 logits, depth_pred = model(img)
 
                 # IoU
                 preds = logits.argmax(dim=1)
-                cm.add(preds, label['track'])
+                cm.add(preds, track)
 
                 # Overall Depth MAE
-                overall_mae = torch.abs(depth_pred - label["depth"]).mean().item()
+                overall_mae = torch.abs(depth_pred - depth).mean().item()
                 overall_mae_values.append(overall_mae)
 
                 # Lane Depth MAE
-                lane_mask = (label['track'] == 1) | (label['track'] == 2)
+                lane_mask = (track == 1) | (track == 2)
                 if lane_mask.any():
-                    lane_mae = torch.abs(depth_pred - label["depth"])[lane_mask].mean().item()
+                    lane_mae = torch.abs(depth_pred - depth)[lane_mask].mean().item()
                     lane_mae_values.append(lane_mae)
 
         # Compute and log metrics
