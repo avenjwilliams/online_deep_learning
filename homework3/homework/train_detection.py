@@ -66,7 +66,7 @@ class total_detection_loss(nn.Module):
 def train(
     exp_dir: str = "logs",
     model_name: str = "classifier",
-    num_epoch: int = 10,
+    num_epoch: int = 15,
     lr: float = 1e-3,
     batch_size: int = 64,
     seed: int = 2024,
