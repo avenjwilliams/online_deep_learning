@@ -149,9 +149,13 @@ class Detector(torch.nn.Module):
         
         self.down1 = Down_Conv(in_channels, first_channels)
         self.down2 = Down_Conv(first_channels, first_channels * 2)
-        
-        self.up1 = Up_Conv(first_channels * 2, first_channels)
-        self.up2 = Up_Conv(first_channels * 2, first_channels)
+        self.down3 = Down_Conv(first_channels * 2, first_channels * 4)
+        self.down4 = Down_Conv(first_channels * 4, first_channels * 8)
+
+        self.up1 = Up_Conv(first_channels * 8, first_channels * 4)
+        self.up2 = Up_Conv(first_channels * 8, first_channels * 2)
+        self.up3 = Up_Conv(first_channels * 4, first_channels)
+        self.up4 = Up_Conv(first_channels * 2, first_channels)
         
         
 
@@ -173,12 +177,22 @@ class Detector(torch.nn.Module):
 
         x1 = self.down1(z)
         x2 = self.down2(x1)
+        x3 = self.down3(x2)
+        x4 = self.down4(x3)
 
-        u1 = self.up1(x2)
-        u2 = self.up2(torch.cat([u1, x1], dim = 1))
+        u1 = self.up1(x4)
+        u1 = torch.cat([u1, x3], dim=1)
 
-        logits = self.segmentation_head(u2)
-        raw_depth = self.depth_activation(self.depth_head(u2)).squeeze(1)
+        u2 = self.up2(u1)
+        u2 = torch.cat([u2, x2], dim=1)
+
+        u3 = self.up3(u2)
+        u3 = torch.cat([u3, x1], dim=1)
+
+        u4 = self.up4(u3)              
+
+        logits = self.segmentation_head(u4)
+        raw_depth = self.depth_activation(self.depth_head(u4)).squeeze(1)
 
         return logits, raw_depth
 
