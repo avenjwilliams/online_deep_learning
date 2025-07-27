@@ -61,7 +61,7 @@ class total_detection_loss(nn.Module):
         Returns:
             tensor, scalar loss
         """
-        return self.classification_loss(logits, target) + 0.5 * self.regression_loss(depth_logits, depth_target)
+        return self.classification_loss(logits, target) + 0.25 * self.regression_loss(depth_logits, depth_target)
 
 def train(
     exp_dir: str = "logs",
