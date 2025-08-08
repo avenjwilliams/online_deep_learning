@@ -24,7 +24,7 @@ class MLPPlanner(nn.Module):
         self.n_track = n_track
         self.n_waypoints = n_waypoints
 
-        input_dim = n_track * 2
+        input_dim = n_track * 2 * 2
         output_dim = n_waypoints * 2
 
         self.network = nn.Sequential(
