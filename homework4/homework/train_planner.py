@@ -78,7 +78,7 @@ def train(
 
         model.train()
 
-        for (track_left, track_right), (waypoints, waypoints_mask) in train_data:
+        for ((track_left, track_right), (waypoints, waypoints_mask)) in train_data:
 
             track_left, track_right = track_left.to(device), track_right.to(device)
             waypoints, waypoints_mask = waypoints.to(device), waypoints_mask.to(device)
