@@ -104,9 +104,12 @@ def train(
         with torch.inference_mode():
             model.eval()
 
-            for track_left, track_right, waypoints, waypoints_mask in val_data:
-                track_left, track_right = track_left.to(device), track_right.to(device)
-                waypoints, waypoints_mask = waypoints.to(device), waypoints_mask.to(device)
+            for batch in val_data:
+                track_left = batch["track_left"].to(device)
+                track_right = batch["track_right"].to(device)
+                waypoints = batch["waypoints"].to(device)
+                waypoints_mask = batch["waypoints_mask"].to(device)
+
 
                 pred = model(track_left, track_right)
 
