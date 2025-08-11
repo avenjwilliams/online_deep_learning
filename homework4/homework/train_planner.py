@@ -84,8 +84,12 @@ def train(
             track_right = batch["track_right"].to(device)
             waypoints = batch["waypoints"].to(device)
             waypoints_mask = batch["waypoints_mask"].to(device)
+            image = batch["image"].to(device) if "image" in batch else None
 
-            pred = model(track_left, track_right)
+            if model_name.lower() == "cnn_planner":
+                pred = model(image)
+            else:
+                pred = model(track_left, track_right)
 
             loss_val = loss_func(pred, waypoints, waypoints_mask)
 
