@@ -61,8 +61,6 @@ class MLPPlanner(nn.Module):
         output = self.network(x)
         return output.view(-1, self.n_waypoints, 2)
 
-import torch
-
 class TransformerLayer(torch.nn.Module):
     def __init__(self, embed_dim: int, num_heads: int) -> None:
         super().__init__()
@@ -76,7 +74,6 @@ class TransformerLayer(torch.nn.Module):
             torch.nn.Linear(4 * embed_dim, embed_dim),
         )
 
-        # Pre-norms for queries and memory, plus MLP norm
         self.q_norm   = torch.nn.LayerNorm(embed_dim)
         self.kv_norm  = torch.nn.LayerNorm(embed_dim)
         self.mlp_norm = torch.nn.LayerNorm(embed_dim)
@@ -85,16 +82,12 @@ class TransformerLayer(torch.nn.Module):
         self,
         x: torch.Tensor,
         memory: torch.Tensor,
-        attn_mask: torch.Tensor | None = None,
-        key_padding_mask: torch.Tensor | None = None,
     ) -> torch.Tensor:
         q = self.q_norm(x)
         kv = self.kv_norm(memory)
 
         attn_out, _ = self.cross_att(
             query=q, key=kv, value=kv,
-            attn_mask=attn_mask,
-            key_padding_mask=key_padding_mask
         )
         x = x + attn_out
 
