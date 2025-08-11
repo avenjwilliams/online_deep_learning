@@ -207,7 +207,7 @@ class CNNPlanner(torch.nn.Module):
             nn.Linear(first_channels, n_waypoints * 2),
         )
 
-    def forward(self, image: torch.Tensor, **kwargs) -> torch.Tensor:
+    def forward(self, image: torch.Tensor, *args, **kwargs) -> torch.Tensor:
         """
         Args:
             image (torch.FloatTensor): shape (b, 3, h, w) and vals in [0, 1]
