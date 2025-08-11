@@ -61,6 +61,46 @@ class MLPPlanner(nn.Module):
         output = self.network(x)
         return output.view(-1, self.n_waypoints, 2)
 
+import torch
+
+class TransformerLayer(torch.nn.Module):
+    def __init__(self, embed_dim: int, num_heads: int) -> None:
+        super().__init__()
+
+        self.cross_att = torch.nn.MultiheadAttention(
+            embed_dim, num_heads, batch_first=True
+        )
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(embed_dim, 4 * embed_dim),
+            torch.nn.ReLU(),
+            torch.nn.Linear(4 * embed_dim, embed_dim),
+        )
+
+        # Pre-norms for queries and memory, plus MLP norm
+        self.q_norm   = torch.nn.LayerNorm(embed_dim)
+        self.kv_norm  = torch.nn.LayerNorm(embed_dim)
+        self.mlp_norm = torch.nn.LayerNorm(embed_dim)
+
+    def forward(
+        self,
+        x: torch.Tensor,
+        memory: torch.Tensor,
+        attn_mask: torch.Tensor | None = None,
+        key_padding_mask: torch.Tensor | None = None,
+    ) -> torch.Tensor:
+        q = self.q_norm(x)
+        kv = self.kv_norm(memory)
+
+        attn_out, _ = self.cross_att(
+            query=q, key=kv, value=kv,
+            attn_mask=attn_mask,
+            key_padding_mask=key_padding_mask
+        )
+        x = x + attn_out
+
+        x = x + self.mlp(self.mlp_norm(x))
+        return x
+
 
 class TransformerPlanner(nn.Module):
     def __init__(
@@ -69,12 +109,19 @@ class TransformerPlanner(nn.Module):
         n_waypoints: int = 3,
         d_model: int = 64,
     ):
+        self.d_model = d_model
         super().__init__()
 
         self.n_track = n_track
         self.n_waypoints = n_waypoints
 
         self.query_embed = nn.Embedding(n_waypoints, d_model)
+
+        self.inital_projection = nn.Linear(4, d_model)
+
+        self.transformer_layer = TransformerLayer(d_model, 8)
+
+        self.output = nn.Linear(d_model, 2)
 
     def forward(
         self,
@@ -95,7 +142,15 @@ class TransformerPlanner(nn.Module):
         Returns:
             torch.Tensor: future waypoints with shape (b, n_waypoints, 2)
         """
-        raise NotImplementedError
+        x = torch.cat((track_left, track_right), dim=-1)
+
+        memory = self.inital_projection(x)
+
+        queries = self.query_embed.weight.unsqueeze(0).expand(track_left.size(0), self.n_waypoints, self.d_model)
+
+        h = self.transformer_layer(queries, memory)
+
+        return self.output(h)
 
 
 class CNNPlanner(torch.nn.Module):
