@@ -154,9 +154,32 @@ class TransformerPlanner(nn.Module):
 
 
 class CNNPlanner(torch.nn.Module):
+    class Down_Block(nn.Module):
+        def __init__(self, in_channels: int, out_channels: int):
+            super().__init__()
+            self.conv = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=2, padding=1)
+            self.bn = nn.BatchNorm2d(out_channels)
+            self.relu = nn.ReLU(inplace=True)
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.relu(self.bn(self.conv(x)))
+        
+    class Up_Block(nn.Module):
+        def __init__(self, in_channels: int, out_channels: int):
+            super().__init__()
+            self.conv = nn.ConvTranspose2d(in_channels, out_channels, kernel_size=3, stride = 2, padding=1, output_padding=1)
+            self.bn = nn.BatchNorm2d(out_channels)
+            self.relu = nn.ReLU(inplace=True)
+
+        def forward(self, x: torch.Tensor) -> torch.Tensor:
+            return self.relu(self.bn(self.conv(x)))
+
+      
     def __init__(
         self,
         n_waypoints: int = 3,
+        in_channels: int = 3,
+        first_channels: int = 32,
     ):
         super().__init__()
 
@@ -164,6 +187,25 @@ class CNNPlanner(torch.nn.Module):
 
         self.register_buffer("input_mean", torch.as_tensor(INPUT_MEAN), persistent=False)
         self.register_buffer("input_std", torch.as_tensor(INPUT_STD), persistent=False)
+
+        Up_Conv = self.Up_Block
+        Down_Conv = self.Down_Block
+        
+        self.down1 = Down_Conv(in_channels, first_channels)
+        self.down2 = Down_Conv(first_channels, first_channels * 2)
+        self.down3 = Down_Conv(first_channels * 2, first_channels * 4)
+        self.down4 = Down_Conv(first_channels * 4, first_channels * 8)
+
+        self.up1 = Up_Conv(first_channels * 8, first_channels * 4)
+        self.up2 = Up_Conv(first_channels * 8, first_channels * 2)
+        self.up3 = Up_Conv(first_channels * 4, first_channels)
+        self.up4 = Up_Conv(first_channels * 2, first_channels)
+
+        self.output = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Linear(first_channels, n_waypoints * 2),
+        )
 
     def forward(self, image: torch.Tensor, **kwargs) -> torch.Tensor:
         """
@@ -176,7 +218,24 @@ class CNNPlanner(torch.nn.Module):
         x = image
         x = (x - self.input_mean[None, :, None, None]) / self.input_std[None, :, None, None]
 
-        raise NotImplementedError
+        x1 = self.down1(x)
+        x2 = self.down2(x1)
+        x3 = self.down3(x2)
+        x4 = self.down4(x3)
+
+        u1 = self.up1(x4)
+        u1 = torch.cat([u1, x3], dim=1)
+
+        u2 = self.up2(u1)
+        u2 = torch.cat([u2, x2], dim=1)
+
+        u3 = self.up3(u2)
+        u3 = torch.cat([u3, x1], dim=1)
+
+        u4 = self.up4(u3)
+
+        output = self.output(u4)
+        return output.reshape(-1, self.n_waypoints, 2)
 
 
 MODEL_FACTORY = {
