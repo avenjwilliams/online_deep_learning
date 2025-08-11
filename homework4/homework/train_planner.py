@@ -86,7 +86,7 @@ def train(
             waypoints_mask = batch["waypoints_mask"].to(device)
             image = batch["image"].to(device) if "image" in batch else None
 
-            if model_name.lower() == "cnn_planner":
+            if model_name == "cnn_planner":
                 pred = model(image)
             else:
                 pred = model(track_left, track_right)
