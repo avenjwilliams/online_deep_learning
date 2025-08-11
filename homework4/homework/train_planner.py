@@ -114,9 +114,12 @@ def train(
                 track_right = batch["track_right"].to(device)
                 waypoints = batch["waypoints"].to(device)
                 waypoints_mask = batch["waypoints_mask"].to(device)
+                image = batch["image"].to(device) if "image" in batch else None
 
-
-                pred = model(track_left, track_right)
+                if model_name == "cnn_planner":
+                    pred = model(image)
+                else:
+                    pred = model(track_left, track_right)
 
                 # log
                 metrics['val_longitudinal_acc'].append(longitudinal_MAE(pred, waypoints, waypoints_mask))
